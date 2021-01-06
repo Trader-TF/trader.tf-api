@@ -1,5 +1,5 @@
 {
-  "name": "@trader-tf/prices",
+  "name": "trader.tf",
   "version": "0.0.0-development",
   "description": "Trader.tf API wrapper for access from applications.\r Handles socket and http layer api calls.",
   "main": "dist/index.js",
