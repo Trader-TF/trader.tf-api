@@ -1,10 +1,8 @@
 import io, { Socket } from 'socket.io-client'
 
-import { TraderTFOptions, UserPrice, Price, Snapshot } from './common'
+import { TraderTFOptions, Price, Snapshot } from './common'
 
 export type OnPriceListener = (price: Price) => unknown;
-
-export type OnUserPriceListener = (price: UserPrice) => unknown;
 
 export type OnSnapshotListener = (price: Snapshot) => unknown;
 
@@ -12,7 +10,7 @@ export class TraderTFSocket {
 	public readonly socket: typeof Socket;
 
 	constructor ({
-		pricerInstanceUrl = 'https://trader.tf',
+		pricerInstanceUrl = 'https://trader.tf/main',
 		apiKey
 	}: TraderTFOptions) {
 		this.socket = io(pricerInstanceUrl, {
@@ -49,15 +47,6 @@ export class TraderTFSocket {
 		}
 
 		this.socket.on('price', listener)
-	}
-
-	onUserPrice (listener: OnUserPriceListener, sku?: string) {
-		if (sku) {
-			this.socket.on(`user-price/${sku}`, listener)
-			return
-		}
-
-		this.socket.on('user-price', listener)
 	}
 
 	onSnapshot (listener: OnSnapshotListener, sku?: string) {

@@ -1,7 +1,15 @@
+/* eslint-disable no-unused-vars */
 import axios, { AxiosError, AxiosInstance } from 'axios'
 import Bottleneck from 'bottleneck'
 
-import { TraderTFOptions, Currency, UserPrice, Price, Snapshot } from './common'
+import { TraderTFOptions, Currency, Price, Snapshot } from './common'
+import { ApiError } from './api-error'
+
+export enum ListingResponses {
+	Updated = 0,
+	Created = 1,
+	ExceededLimit = 2
+}
 
 export type APIResponse<TResponse> =
 	| {
@@ -15,10 +23,6 @@ export type APIResponse<TResponse> =
 
 export type GetPriceResponse = Price;
 
-export type AddListingResponse = {
-	added: boolean;
-};
-
 export type GetListingResponse = {
 	sku: string;
 	min: Currency;
@@ -27,42 +31,25 @@ export type GetListingResponse = {
 	belongsTo: string;
 };
 
-export type RemoveListingResponse = {
-	removed: boolean;
-};
+export type GetListingsResponse = GetListingResponse[];
 
-export type GetUserPriceResponse = UserPrice
+export type AddListingsResponse = Record<string, ListingResponses>
+
+export type RemoveListingsResponse = { deletedAmount: number };
 
 export type RequestPriceResponse = {
 	queued: boolean;
+	info: string;
 };
 
-export type GetPriceHistoryResponse = {
-	sku: string;
-	history: {
-		buy: Currency;
-		sell: Currency;
-		time: number;
-	}[];
-};
+export type GetPriceHistoryResponse = Price[];
 
 export type GetSnapshotResponse = Snapshot;
 
 export type GetRateResponse = {
-	value: number;
-	type: 'key';
-}
-
-export type AddToBlacklistResponse = {
-	added: boolean;
-}
-
-export type GetBlacklistResponse = {
-	blacklist: string[]
-}
-
-export type RemoveFromBlacklistResponse = {
-	removed: boolean;
+	buy: number;
+	sell: number;
+	time: number;
 }
 
 /**
@@ -114,7 +101,7 @@ export class TraderTFAPI {
 			)
 
 			if (!response.data.success) {
-				throw new Error(response.data.message)
+				throw new ApiError(response.data.message, response.status)
 			}
 
 			return response.data.result
@@ -151,63 +138,42 @@ export class TraderTFAPI {
 		})
 	}
 
-	async getUserPrice (sku: string): Promise<GetUserPriceResponse> {
-		return this.request<GetUserPriceResponse>('GET', '/user-price', {
-			sku,
-			key: this.apiKey
-		})
-	}
-
-	async addListing (sku: string): Promise<AddListingResponse> {
-		return this.request<AddListingResponse>(
+	async addListing (listings: { sku: string; max?: Currency; min?: Currency }[]): Promise<AddListingsResponse> {
+		return this.request<AddListingsResponse>(
 			'POST',
-			'/listing',
+			'/listings',
 			{
 				key: this.apiKey
 			},
-			{
-				sku
-			}
+			listings
 		)
 	}
 
 	async getListing (sku: string): Promise<GetListingResponse> {
-		return this.request<GetListingResponse>('GET', '/listing', {
-			sku,
+		return this.request<GetListingResponse>('GET', '/listings/' + sku, {
 			key: this.apiKey
 		})
 	}
 
-	async removeListing (sku: string): Promise<RemoveListingResponse> {
-		return this.request<RemoveListingResponse>('GET', '/delete', {
-			sku,
+	async getListings (): Promise<GetListingsResponse> {
+		return this.request<GetListingsResponse>('GET', '/listings', { key: this.apiKey })
+	}
+
+	async removeListing (skus: string[]): Promise<RemoveListingsResponse> {
+		return this.request<RemoveListingsResponse>('GET', '/listings', {
 			key: this.apiKey
-		})
+		}, skus)
 	}
 
 	async getRate (): Promise<GetRateResponse> {
-		return this.request<GetRateResponse>('GET', '/pricer/rate', {
+		return this.request<GetRateResponse>('GET', '/rate', {
 			key: this.apiKey
 		})
 	}
 
-	async addToBlacklist (steamId: string): Promise<AddToBlacklistResponse> {
-		return this.request<AddToBlacklistResponse>('POST', '/settings/blacklist', {
-			key: this.apiKey,
-			steamId
-		})
-	}
-
-	async getBlacklist (): Promise<GetBlacklistResponse> {
-		return this.request<GetBlacklistResponse>('GET', '/settings/blacklist', {
+	async getPricelist (): Promise<Price[]> {
+		return this.request<Price[]>('GET', '/pricelist', {
 			key: this.apiKey
-		})
-	}
-
-	async removeFromBlacklist (steamId: string): Promise<RemoveFromBlacklistResponse> {
-		return this.request<RemoveFromBlacklistResponse>('DELETE', '/settings/blacklist', {
-			key: this.apiKey,
-			steamId
 		})
 	}
 }
@@ -224,6 +190,8 @@ export function throwErrorWithAPIMessage (method: string, url: string, e: AxiosE
 			: errorsOrMessage
 
 		status = e.response?.status || 0
+
+		throw new ApiError(`${method} ${url}: ${message}`, status)
 	}
 
 	throw new Error(

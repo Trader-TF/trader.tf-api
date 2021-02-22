@@ -27,17 +27,10 @@ export type Snapshot = {
 	time: number;
 };
 
-export type UserPrice = {
-	sku: string;
-	time: number;
-	buy: Currency;
-	sell: Currency;
-	belongsTo: string;
-};
-
 export type Price = {
 	sku: string;
 	time: number;
 	buy: Currency;
 	sell: Currency;
+	belongsTo: string;
 }
