@@ -40,21 +40,25 @@ export class TraderTFSocket {
 		})
 	}
 
-	onPrice (listener: OnPriceListener, sku?: string) {
-		if (sku) {
-			this.socket.on(`price/${sku}`, listener)
+	onPrice (sku: string|OnPriceListener, listener?: OnPriceListener): void {
+		if (typeof sku === 'function') {
+			this.socket.on('price', sku)
 			return
 		}
 
-		this.socket.on('price', listener)
+		if (listener) {
+			this.socket.on(`price/${sku}`, listener)
+		}
 	}
 
-	onSnapshot (listener: OnSnapshotListener, sku?: string) {
-		if (sku) {
-			this.socket.on(`snapshot/${sku}`, listener)
+	onSnapshot (sku: string|OnSnapshotListener, listener?: OnSnapshotListener) {
+		if (typeof sku === 'function') {
+			this.socket.on('snapshot', sku)
 			return
 		}
 
-		this.socket.on('snapshot', listener)
+		if (listener) {
+			this.socket.on(`snapshot/${sku}`, listener)
+		}
 	}
 }
