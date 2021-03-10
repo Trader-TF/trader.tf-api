@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+import url from 'url'
 import axios, { AxiosError, AxiosInstance } from 'axios'
 import Bottleneck from 'bottleneck'
 
@@ -69,7 +70,7 @@ export class TraderTFAPI {
 		apiKey,
 		rateLimit = true
 	}: TraderTFOptions & { rateLimit?: boolean; }) {
-		this.requestClient = axios.create({ baseURL: pricerInstanceUrl })
+		this.requestClient = axios.create({ baseURL: url.format(`${pricerInstanceUrl}/api/bptf`) })
 		this.apiKey = apiKey
 		if (!rateLimit) {
 			this.bottleneck = new Bottleneck()
@@ -87,8 +88,13 @@ export class TraderTFAPI {
 	private async request<TResponse> (
 		method: 'GET' | 'POST' | 'DELETE',
 		url: string,
-		params: { [key: string]: any } = {},
-		data: { [key: string]: any } = {}
+		{
+			data = {},
+			params = {}
+		}: {
+			params?: object,
+			data?: object
+		} = {}
 	): Promise<TResponse> {
 		try {
 			const response = await this.bottleneck.schedule(() =>
@@ -96,7 +102,10 @@ export class TraderTFAPI {
 					url,
 					method,
 					params,
-					data
+					data,
+					headers: {
+						Authorization: 'Bearer ' + this.apiKey
+					}
 				})
 			)
 
@@ -111,70 +120,53 @@ export class TraderTFAPI {
 	}
 
 	async getPrice (sku: string): Promise<GetPriceResponse> {
-		return this.request<GetPriceResponse>('GET', '/price', {
-			sku,
-			key: this.apiKey
-		})
+		return this.request<GetPriceResponse>('GET', `/prices/${sku}`)
 	}
 
 	async requestPrice (sku: string): Promise<RequestPriceResponse> {
-		return this.request<RequestPriceResponse>('POST', '/price', {
-			sku,
-			key: this.apiKey
-		})
+		return this.request<RequestPriceResponse>('POST', `/prices/${sku}`)
 	}
 
 	async getSnapshot (sku: string): Promise<GetSnapshotResponse> {
-		return this.request<GetSnapshotResponse>('GET', '/snapshot', {
-			sku,
-			key: this.apiKey
-		})
+		return this.request<GetSnapshotResponse>('GET', `/snapshots/${sku}`)
 	}
 
 	async getPriceHistory (sku: string): Promise<GetPriceHistoryResponse> {
-		return this.request<GetPriceHistoryResponse>('GET', '/price/history', {
-			sku,
-			key: this.apiKey
-		})
+		return this.request<GetPriceHistoryResponse>('GET', `/prices/${sku}/history`)
 	}
 
-	async addListing (listings: { sku: string; max?: Currency; min?: Currency }[]): Promise<AddListingsResponse> {
+	async addListings (listings: { sku: string; max?: Currency; min?: Currency }[]): Promise<AddListingsResponse> {
 		return this.request<AddListingsResponse>(
 			'POST',
 			'/listings',
 			{
-				key: this.apiKey
-			},
-			listings
+				data: listings
+			}
 		)
 	}
 
 	async getListing (sku: string): Promise<GetListingResponse> {
-		return this.request<GetListingResponse>('GET', '/listings/' + sku, {
-			key: this.apiKey
-		})
+		return this.request<GetListingResponse>('GET', '/listings/' + sku)
 	}
 
 	async getListings (): Promise<GetListingsResponse> {
-		return this.request<GetListingsResponse>('GET', '/listings', { key: this.apiKey })
+		return this.request<GetListingsResponse>('GET', '/listings')
 	}
 
 	async removeListing (skus: string[]): Promise<RemoveListingsResponse> {
-		return this.request<RemoveListingsResponse>('GET', '/listings', {
-			key: this.apiKey
-		}, skus)
+		return this.request<RemoveListingsResponse>('GET', '/listings', { data: skus })
 	}
 
 	async getRate (): Promise<GetRateResponse> {
-		return this.request<GetRateResponse>('GET', '/rate', {
-			key: this.apiKey
-		})
+		return this.request<GetRateResponse>('GET', '/rate')
+	}
+
+	async getRateHistory (): Promise<GetRateResponse[]> {
+		return this.request<GetRateResponse[]>('GET', '/rate/history')
 	}
 
 	async getPricelist (): Promise<Price[]> {
-		return this.request<Price[]>('GET', '/pricelist', {
-			key: this.apiKey
-		})
+		return this.request<Price[]>('GET', '/prices')
 	}
 }
 

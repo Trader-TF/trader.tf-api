@@ -10,11 +10,12 @@ export class TraderTFSocket {
 	public readonly socket: typeof Socket;
 
 	constructor ({
-		pricerInstanceUrl = 'https://trader.tf/main',
+		pricerInstanceUrl = 'https://trader.tf/',
 		apiKey
 	}: TraderTFOptions) {
 		this.socket = io(pricerInstanceUrl, {
 			autoConnect: false,
+			forceNew: true,
 			/**
              * Authentication happens within the query.
              */
