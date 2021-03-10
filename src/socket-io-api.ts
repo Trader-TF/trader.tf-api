@@ -10,7 +10,7 @@ export class TraderTFSocket {
 	public readonly socket: typeof Socket;
 
 	constructor ({
-		pricerInstanceUrl = 'https://trader.tf/',
+		pricerInstanceUrl = 'https://trader.tf/main',
 		apiKey
 	}: TraderTFOptions) {
 		this.socket = io(pricerInstanceUrl, {
